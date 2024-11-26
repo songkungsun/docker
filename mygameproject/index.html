@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>벽돌깨기 게임</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid #000;
+        }
+    </style>
+</head>
+<body>
+    <h1>벽돌깨기 게임</h1>
+    <canvas id="gameCanvas" width="480" height="320"></canvas>
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        // 공 설정
+        let ball = { x: canvas.width / 2, y: canvas.height - 30, dx: 2, dy: -2, radius: 10 };
+
+        // 패들 설정
+        const paddle = { width: 75, height: 10, x: (canvas.width - 75) / 2, speed: 7, movingLeft: false, movingRight: false };
+
+        // 벽돌 설정
+        const brick = { rowCount: 3, columnCount: 5, width: 75, height: 20, padding: 10, offsetTop: 30, offsetLeft: 30 };
+        const bricks = Array.from({ length: brick.columnCount }, () =>
+            Array.from({ length: brick.rowCount }, () => ({ x: 0, y: 0, status: 1 }))
+        );
+
+        // 키보드 이벤트 처리
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Right" || e.key === "ArrowRight") paddle.movingRight = true;
+            if (e.key === "Left" || e.key === "ArrowLeft") paddle.movingLeft = true;
+        });
+        document.addEventListener("keyup", (e) => {
+            if (e.key === "Right" || e.key === "ArrowRight") paddle.movingRight = false;
+            if (e.key === "Left" || e.key === "ArrowLeft") paddle.movingLeft = false;
+        });
+
+        // 벽돌 그리기
+        function drawBricks() {
+            for (let c = 0; c < brick.columnCount; c++) {
+                for (let r = 0; r < brick.rowCount; r++) {
+                    if (bricks[c][r].status) {
+                        const x = c * (brick.width + brick.padding) + brick.offsetLeft;
+                        const y = r * (brick.height + brick.padding) + brick.offsetTop;
+                        bricks[c][r].x = x;
+                        bricks[c][r].y = y;
+                        ctx.fillStyle = "#0095DD";
+                        ctx.fillRect(x, y, brick.width, brick.height);
+                    }
+                }
+            }
+        }
+
+        // 공 그리기
+        function drawBall() {
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fillStyle = "#0095DD";
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        // 패들 그리기
+        function drawPaddle() {
+            ctx.fillStyle = "#0095DD";
+            ctx.fillRect(paddle.x, canvas.height - paddle.height, paddle.width, paddle.height);
+        }
+
+        // 충돌 감지
+        function collisionDetection() {
+            for (let c = 0; c < brick.columnCount; c++) {
+                for (let r = 0; r < brick.rowCount; r++) {
+                    const b = bricks[c][r];
+                    if (b.status && ball.x > b.x && ball.x < b.x + brick.width && ball.y > b.y && ball.y < b.y + brick.height) {
+                        ball.dy = -ball.dy;
+                        b.status = 0;
+                    }
+                }
+            }
+        }
+
+        // 게임 루프
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBricks();
+            drawBall();
+            drawPaddle();
+            collisionDetection();
+
+            // 공 이동
+            ball.x += ball.dx;
+            ball.y += ball.dy;
+
+            // 공의 벽 충돌
+            if (ball.x + ball.dx > canvas.width - ball.radius || ball.x + ball.dx < ball.radius) ball.dx = -ball.dx;
+            if (ball.y + ball.dy < ball.radius) ball.dy = -ball.dy;
+            else if (ball.y + ball.dy > canvas.height - ball.radius) {
+                if (ball.x > paddle.x && ball.x < paddle.x + paddle.width) ball.dy = -ball.dy;
+                else {
+                    alert("게임 오버!");
+                    document.location.reload();
+                }
+            }
+
+            // 패들 이동
+            if (paddle.movingRight && paddle.x < canvas.width - paddle.width) paddle.x += paddle.speed;
+            if (paddle.movingLeft && paddle.x > 0) paddle.x -= paddle.speed;
+
+            requestAnimationFrame(draw);
+        }
+
+        draw();
+    </script>
+</body>
+</html>
